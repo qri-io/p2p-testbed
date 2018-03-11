@@ -33,16 +33,15 @@ func NewPeer(ctx context.Context, params *testutil.PeerNetParams) (peer *Peer, e
 		return
 	}
 
+	state := &sync.Map{}
+	state.Store("pet", RandomAnimal())
+
 	peer = &Peer{
 		ID:        params.ID,
 		Host:      host,
 		Peerstore: ps,
 		ctx:       ctx,
-		state: map[string]interface{}{
-			// pick a random pet, just to give peers
-			// something to talk about
-			"pet": RandomAnimal(),
-		},
+		state:     state,
 	}
 
 	host.SetStreamHandler(testbedProtocolID, peer.TestbedHandler)
@@ -51,26 +50,17 @@ func NewPeer(ctx context.Context, params *testutil.PeerNetParams) (peer *Peer, e
 
 // Peer is a peer in a (simulated) peer-2-peer network
 type Peer struct {
-	ctx       context.Context
-	ID        peer.ID
-	Host      host.Host
+	// ctx is the base operating context
+	ctx context.Context
+	// ID is the peer's identifier on the network
+	ID peer.ID
+	// Host carries all p2p protocols & services
+	// for interacting on the network
+	Host host.Host
+	// Peerstore keeps a list
 	Peerstore pstore.Peerstore
-	stateLock sync.Mutex
-	state     map[string]interface{}
-}
-
-// SetState sets a piece of state on a peer for a given key
-func (p *Peer) SetState(key string, val interface{}) {
-	p.stateLock.Lock()
-	defer p.stateLock.Unlock()
-	p.state[key] = val
-}
-
-// GetState sets a piece of state on a peer for a given key
-func (p *Peer) GetState(key string) (val interface{}) {
-	p.stateLock.Lock()
-	defer p.stateLock.Unlock()
-	return p.state[key]
+	// state is an in-memory map of any state
+	state *sync.Map
 }
 
 // RandomAnimal generates a random animal, used for demonstration purposes

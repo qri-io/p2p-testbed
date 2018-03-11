@@ -23,12 +23,17 @@ const (
 // this process will forward that message to the observer process.
 // This message was obviously sent before the snapshot “cut off” (as it does not bear a snapshot token and thus must
 // have come from before the snapshot token was sent out) and needs to be included in the snapshot.
-func InitiateCLSnapshot(p *Peer) {
+func InitiateCLSnapshot(p *Peer, done func(snapshotId string)) {
 	log.Infof("%s initiating CL snapshot", p.ID)
 	snapshotToken := NewMessageID()
 
 	span := opentracing.StartSpan("cl_snapshot")
-	p.SetState(clSpanStateKey(snapshotToken), span)
+	callback := func() {
+		log.Infof("%s calling CL snapshot callback", p.ID)
+		span.Finish()
+		done(snapshotToken)
+	}
+	p.state.Store(clIniitiateSnapshotKey(snapshotToken), callback)
 
 	TakeCLSnapshot(p, snapshotToken, span)
 }
@@ -39,7 +44,7 @@ func InitiateCLSnapshot(p *Peer) {
 func TakeCLSnapshot(p *Peer, snapshotToken string, span opentracing.Span) {
 	// get snapshots map from state
 	snapshots := map[string]interface{}{}
-	if val := p.GetState(clSnapshots); val != nil {
+	if val, ok := p.state.Load(clSnapshots); ok {
 		if sl, ok := val.(map[string]interface{}); ok {
 			snapshots = sl
 		}
@@ -47,11 +52,11 @@ func TakeCLSnapshot(p *Peer, snapshotToken string, span opentracing.Span) {
 
 	// check if snapshot is empty
 	if snapshots[snapshotToken] == nil {
-		log.Infof("%s recording snapshot. forwarding to %d peers", p.ID, len(p.Peerstore.Peers())-1)
+		log.Debugf("%s recording snapshot. forwarding to %d peers", p.ID, len(p.Peerstore.Peers())-1)
 		// record snapshot
 		ss := LocalCLSnapshot(p)
 		snapshots[snapshotToken] = ss
-		p.SetState(clSnapshots, snapshots)
+		p.state.Store(clSnapshots, snapshots)
 		span.SetTag("state", ss)
 
 		// send marker to each connected peer
@@ -71,9 +76,11 @@ func LocalCLSnapshot(p *Peer) string {
 		connPeers[i] = c.RemotePeer().Pretty()
 	}
 
+	pet, _ := p.state.Load("pet")
+
 	state := map[string]interface{}{
 		"peerID": p.ID.Pretty(),
-		"pet":    p.GetState("pet"),
+		"pet":    pet,
 		"conns":  connPeers,
 	}
 
@@ -100,15 +107,18 @@ func ChandyLamportHandler(p *Peer, ws *WrappedStream, msg Message) (hangup bool)
 		span.Finish()
 
 		// if we initiated this span, close it off
-		if initspan, ok := p.GetState(clSpanStateKey(snapshotToken)).(opentracing.Span); ok {
-			// log.Infof("%s finalized snapshot: %s", p.ID, snapshotToken)
-			initspan.Finish()
+		if state, ok := p.state.Load(clIniitiateSnapshotKey(snapshotToken)); ok {
+			if callback, ok := state.(func()); ok {
+				// log.Infof("%s finalized snapshot: %s", p.ID, snapshotToken)
+				callback()
+				p.state.Delete(clIniitiateSnapshotKey(snapshotToken))
+			}
 		}
 	}
 	return true
 }
 
-// clSpanStateKey is where we keep spans in state for initiated snapshots
-func clSpanStateKey(snapshotToken string) string {
+// clIniitiateSnapshotKey is where we keep spans in state for initiated snapshots
+func clIniitiateSnapshotKey(snapshotToken string) string {
 	return fmt.Sprintf("initiatedSnapshot.%s", snapshotToken)
 }

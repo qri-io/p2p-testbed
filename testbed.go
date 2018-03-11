@@ -27,9 +27,9 @@ func init() {
 }
 
 func main() {
-	log.Info("starting p2p-testbed with %d peers", peerCount)
 	startAppDash()
 
+	log.Infof("starting network with %d peers", peerCount)
 	ctx := context.Background()
 	peers, err := Setup(ctx, peerCount)
 	if err != nil {
@@ -42,7 +42,9 @@ func main() {
 	}
 
 	// take a CL snapshot
-	InitiateCLSnapshot(peers[1])
+	InitiateCLSnapshot(peers[1], func(snapshotToken string) {
+		log.Infof("recorded snapshot: %s", snapshotToken)
+	})
 
 	// block forever
 	<-make(chan bool)

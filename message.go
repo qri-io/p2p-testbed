@@ -32,13 +32,13 @@ func NewMessage(t MsgType, payload interface{}, span opentracing.Span) Message {
 	return msg
 }
 
-var runes = []rune("0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
+var alpharunes = []rune("0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
 
 // NewMessageID generates a random message identifier
 func NewMessageID() string {
 	b := make([]rune, 10)
 	for i := range b {
-		b[i] = runes[rand.Intn(len(runes))]
+		b[i] = alpharunes[rand.Intn(len(alpharunes))]
 	}
 	return string(b)
 }
