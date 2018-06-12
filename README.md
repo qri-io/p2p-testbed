@@ -24,8 +24,8 @@ Wi-Fi
 Bluetooth
 USB
 ### 2.2.2 Addressing a machine or process
-IPv4 - IP version 4 -> 32bits to record IPaddresses, give us 4.2 billion ip addresses, made at a time when the internet was just a thing for academics
-IPv6
+IPv4 - IP version 4 -> 32-bit address, gives us 4.2 billion ip addresses, made at a time when the internet was just a thing for academics
+IPv6 - IP version 6 -> 128-bit address, gives us 3.4×1038 addresses ip addresses
 Hidden addressing, like SDP
 ### 2.2.3 Discovering other peers or services
 ARP
@@ -56,3 +56,10 @@ What is NAT Traversal:
 NAT traversal is the work around used to compensate the fact that there are more devices trying to use the internet then there are ip addresses for them in IPv4. Watch this video for a good explaination: [How Network Address Translation Works](https://www.youtube.com/watch?v=QBqPzHEDzvo), and may I recommend watching it at 1.25 speed.
 
 ICE -> Interactive Connectivity Establishment
+
+### WTF is multiplexing (or muxing), and WhyTF do we care?
+According to the [Macao Communications Museum website](http://macao.communications.museum/eng/exhibition/secondfloor/moreinfo/2_8_6_Multiplexing.html), which is randomly in english, although I guess that's not too weird: "Multiplexing is the process in which multiple Data Streams, coming from different Sources, are combined and Transmitted over a Single Data Channel or Data Stream."
+
+So basically, a bunch of signals are trying to jam over one 'wire', multiplexing combines these multiple signals into one signal. This concept is not new, It's been around since the telegraph. 
+
+As for why we care i don't know yet
