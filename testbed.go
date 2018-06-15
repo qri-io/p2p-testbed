@@ -27,7 +27,7 @@ func init() {
 }
 
 func main() {
-	log.Info("starting p2p-testbed with %d peers", peerCount)
+	log.Infof("starting p2p-testbed with %d peers", peerCount)
 	startAppDash()
 
 	ctx := context.Background()

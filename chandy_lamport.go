@@ -57,7 +57,7 @@ func TakeCLSnapshot(p *Peer, snapshotToken string, span opentracing.Span) {
 		// send marker to each connected peer
 		for _, peer := range p.Peerstore.Peers() {
 			if peer != p.ID {
-				p.SendMessage(peer, NewMessage(MtCLSnapshot, snapshotToken, span))
+				p.SendMessage(peer, NewMessage(string(p.ID), MtCLSnapshot, snapshotToken, span))
 			}
 		}
 	}

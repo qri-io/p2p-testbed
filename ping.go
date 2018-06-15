@@ -17,7 +17,7 @@ const (
 // SendPing initiates a ping message from peer to a known peer.ID
 func SendPing(p *Peer, peerID peer.ID) error {
 	span := opentracing.StartSpan("PING")
-	msg := NewMessage(MtPing, "PING", span)
+	msg := NewMessage(string(p.ID), MtPing, "PING", span)
 	// add our span to state according to message ID so we can grab it
 	p.SetState(msg.ID, span)
 	// simulate network latency by sleeping for a random number of milliseconds

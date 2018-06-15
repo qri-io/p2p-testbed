@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/opentracing/opentracing-go"
 	"math/rand"
+	"time"
 )
 
 // MsgType indicates the type of message being sent
@@ -10,18 +11,26 @@ type MsgType string
 
 // Message is a message to send from one peer to the other
 type Message struct {
-	ID      string
-	Type    MsgType
-	Tracing opentracing.TextMapCarrier
-	Payload interface{}
+	ID        string
+	Type      MsgType
+	Created   time.Time
+	Deadline  time.Time
+	Initiator string
+	Headers   map[string]string
+	Tracing   opentracing.TextMapCarrier
+	Payload   interface{}
 }
 
 // NewMessage creates a message
-func NewMessage(t MsgType, payload interface{}, span opentracing.Span) Message {
+func NewMessage(initiator string, t MsgType, payload interface{}, span opentracing.Span) Message {
 	msg := Message{
-		ID:      NewMessageID(),
-		Type:    t,
-		Payload: payload,
+		ID:        NewMessageID(),
+		Type:      t,
+		Payload:   payload,
+		Initiator: initiator,
+		Created:   time.Now(),
+		Deadline:  time.Now().Add(time.Minute * 2),
+		Headers:   map[string]string{},
 	}
 
 	if span != nil {
