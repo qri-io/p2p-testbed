@@ -2,6 +2,28 @@
 
 p2p testbed uses request tracing to demonstrate distributed techniques and algorithms using [libp2p](https://libp2p.io) and [request tracing](https://opentracing.io)
 
+
+## testbed.go
+testbed.go has a main function. This function starts and sets up the tracing process and starts a server that displays the tracing information.
+
+### SETUP:
+It then sets up this p2p network, it create new network with a set number of peers, and then connects those peers. In this case, our connectPeers function takes each peer and linearly dials/connects to all the peers that come after it. So peer 0 dials peers 1-19, and peer 15 dials peers 16-19. 
+
+### SEND PING:
+Once that is finished, the main function calls "SendPing," this sends a message, called "PING", from the first peer (peer 0), to a random peer, let's say peer n. This random peer should return a message, called "PONG". When we send a message, what we are really doing is opening up what's called a stream to another peer. (Note to self, wtf is a stream). When we open this stream, we start a loop that listens for a response (handleStream). On the other side of the connection, when a peer 0 sends a request to start a stream with peer n, peer n recieves the message and since it is both a client and a server it knows what to do with it. It opens up a stream as well and creates a loop that listens for more incoming traffic. In the case of "SendPing", peer n recieves just one message from peer 0. It examines the message. It sees that peer 0 has send "PING", and in response it creates a message that says "PONG" and sends that message back to peer 0. Once peer 0, receives "PONG", it signals to the server to hang up on the stream. This hangup on peer 0 triggers a hangup on peer n. The stream is now closed.
+
+### CHANDY LAMPORT:
+'Chandy Lamport is a snapshot algorithm that is used in distributed systems for recording a consistent global state of an asynchronous system.'
+
+*Need to read more about the Chandy-Lamport implimentation on the p2p-testbed*
+
+
+# Okay, so what makes this p2p?
+p2p networking is probably best defined in contrast to the more popular ways of communicating on the internet. Communication online is typically client/server or request/response, that is, a client (like our browser on our personal computer) makes a request to a server (for example, we type `http://www.google.com` into the browser, and it asks the google servers for the google.com webpage), and the server returns some information to the client (google sends back the data that makes up the google.com website, which the browser displays for us).
+
+In a p2p network, any node can be both a client and a server. We can ask for data from other nodes on the network, and they can ask that data from us. There is no centralized source. 
+
+
 # Kasey's notes while tryin to learn about libp2p:
 
 Okay folks, Kasey (aka @ramfox) here. I'm trying to learn how the [libp2p](https://libp2p.io/) package works, and how p2p works in general. 
@@ -108,44 +130,4 @@ Yo, reading the docs on [Circuit Relay](https://github.com/libp2p/specs/tree/mas
 Distributed Record Store: [Interplanetary Record Store spec](https://github.com/libp2p/specs/blob/master/IPRS.md)
 
 Okay, so after all that context, I'm finally going to look at the p2p-testbed and see if I'm less confused than before.
-
-
-### testbed.go
-Looking at the main func:
-what is startAppDash(), I'm guessing it... starts whatever AppDash is.
-
-  startAppDash:
-  1) get a new MemoryStore
-  2) ListenTCP - listen on any available TCP port locally
-  3) Get's the port from the addr -> collectorPort
-  4) collectorAdd = ":[collectorPort]" ???
-  5) appdash.Newserver(listener, collector) returns a collectorserver
-  6) in a go routine, start the server
-  7) prints the port/url the webUI will be running
-  8) parse url into type URL
-  9) start the webUI in a separate goroutine - traceapp.New returns a new traceapp, with a router with a bunch of handlers, listen and serve in a function running in a separate go routine
-  11) appdashot.Tracer reports spans to the collector. 
-
-we get a context.Background(), which means we get a context that does not have a endtime
-Okay what does Setup(context, peerCount) do? -> returns a slice of references to Peers
-  Setup():
-  1) creates a span (opentracing.Span)
-  2) StartSpanFromContext()? => calls startSpanFromContextWithTracer, which sees if there is already a span associated with Context (parentSpan), if so, it adds it to the list of StartSpanOptions (opts), returns a span
-  3) SetTag "peerCount" # of peers
-  4) Create a new network -> 
-    1) new span, StartSpanFromContext(ctx, "NewNetwork")
-    2) make slice of peers, underlying array # of peerCount
-      For each num, create RandPeerNetParams() (from the libp2p/go-testutil package)
-      PeerNetParams include an ID, PrivKey, PubKey, and Addr (multiaddr)
-      Makes new PeerNetParams, Addr is the ZeroLocalTCPAddress, random Priv and Pub keys are generated, ID is generated from PubKey, and PeerNetParams are returned
-    3) Create a new peer from the ctx and params
-    Peers have: Id, Host, Peerstore, ctx, and some state that holds info (map[string]interface{})
-    Peerstore => https://github.com/libp2p/go-libp2p-peerstore/blob/master/peerstore.go
-    makes a new peerstore, adds private and public key to peerstore
-    makeBasicHost(context, ID, slice of multiaddrs, with addr to peer first, peerstore)
-
-Okay time ot find out about opentracing, yay learning new things
-
-
-
 
