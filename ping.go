@@ -17,7 +17,7 @@ const (
 // SendPing initiates a ping message from peer to a known peer.ID
 func SendPing(p *Peer, peerID peer.ID) error {
 	span := opentracing.StartSpan("PING")
-	msg := NewMessage(MtPing, "PING", span)
+	msg := NewMessage(string(p.ID), MtPing, "PING", span)
 	// add our span to state according to message ID so we can grab it
 	p.SetState(msg.ID, span)
 	// simulate network latency by sleeping for a random number of milliseconds
@@ -28,6 +28,7 @@ func SendPing(p *Peer, peerID peer.ID) error {
 // PingHandler handles messages of type MtPing
 func PingHandler(p *Peer, ws *WrappedStream, msg Message) (hangup bool) {
 	if payload, ok := msg.Payload.(string); ok {
+		log.Infof("%s received message: %+v", p.ID, payload)
 		switch payload {
 		case "PONG":
 			// grab the span out of state & close it
@@ -47,12 +48,12 @@ func PingHandler(p *Peer, ws *WrappedStream, msg Message) (hangup bool) {
 
 			// simulate network latency by sleeping for a random number of milliseconds
 			time.Sleep(time.Millisecond * time.Duration(rand.Intn(100)))
-			p.SendMessage(ws.stream.Conn().RemotePeer(), Message{
+			sendMessage(Message{
 				ID:      msg.ID,
 				Tracing: msg.Tracing,
 				Type:    MtPing,
 				Payload: "PONG",
-			})
+			}, ws)
 		}
 	}
 	return true

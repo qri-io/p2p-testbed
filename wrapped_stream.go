@@ -50,6 +50,7 @@ func receiveMessage(ws *WrappedStream) (msg Message, err error) {
 
 // sendMessage encodes and writes a message to the stream
 func sendMessage(msg Message, ws *WrappedStream) error {
+	log.Infof("sending messsage: %+v", msg.Payload)
 	err := ws.enc.Encode(&msg)
 	// Because output is buffered with bufio, we need to flush!
 	ws.w.Flush()
